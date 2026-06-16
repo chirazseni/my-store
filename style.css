@@ -21,60 +21,48 @@ a { text-decoration: none; color: inherit; transition: all 0.3s ease; }
    2. شريط التنقل (Header & Navbar) - تم تعديله لمنع التداخل
    ========================================================================== */
 /* تنسيق الـ Header العام */
+/* تنسيق الـ Header العام */
 header {
     display: flex;
-    justify-content: space-between; /* اللوجو يمين، القائمة يسار */
+    justify-content: space-between;
     align-items: center;
     padding: 15px 5%;
-    background-color: white;
-    position: relative;
 }
 
-/* تنسيق القائمة العادية */
-.nav-links {
-    display: flex;
-    gap: 20px;
-}
-
-/* زر الهامبرغر (مخفي افتراضياً) */
+/* تنسيق زر الهامبرغر */
 .hamburger {
-    display: none;
+    display: none; /* مخفي في الكمبيوتر */
     flex-direction: column;
-    gap: 5px;
     cursor: pointer;
 }
 
-.hamburger span {
+.hamburger .bar {
     width: 25px;
     height: 3px;
     background-color: #5D504C;
+    margin: 2px 0;
 }
 
-/* إعدادات الموبايل (أقل من 768px) */
+/* تنسيق الموبايل */
 @media (max-width: 768px) {
-    /* نظهر زر الهامبرغر */
     .hamburger {
-        display: flex;
+        display: flex; /* يظهر في الموبايل */
     }
 
-    /* نخفي القائمة العادية */
     .nav-links {
-        display: none; 
+        display: none; /* القائمة تختفي */
         flex-direction: column;
         position: absolute;
         top: 70px;
         left: 0;
         width: 100%;
-        background-color: white;
-        text-align: center;
+        background: white;
         padding: 20px 0;
         box-shadow: 0 5px 10px rgba(0,0,0,0.1);
-        z-index: 1000;
     }
 
-    /* كلاس التنشيط (يُضاف بواسطة JS) */
     .nav-links.active {
-        display: flex;
+        display: flex; /* تظهر عند الضغط */
     }
 }
 
