@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <!-- SEO Meta Tags الأساسية لمنح الموقع ظهوراً احترافياً في محركات البحث -->
+    <title>Chiraz Store | Boutique de Mode En Ligne</title>
+    <meta name="description" content="Bienvenue chez Chiraz Store, votre destination exclusive pour l'élégance et le confort. Découvrez nos collections de Robes, Abayas et Ensembles de haute qualité.">
+    <meta name="keywords" content="Chiraz Store, mode femme, robe, abaya, ensemble, boutique en ligne, chic, élégance, Algérie">
+    <meta name="author" content="Chiraz senni">
+    
+    <!-- Open Graph (تخص الـ SEO عند مشاركة رابط الموقع في منصات التواصل الاجتماعي) -->
+    <meta property="og:title" content="Chiraz Store | Boutique de Mode En Ligne">
+    <meta property="og:description" content="Découvrez nos collections exclusives de Robes, Abayas et Ensembles.">
+    <meta property="og:type" content="website">
+</head>
+<body>
+
+    <!-- 1. شريط التنقل العلوي (Navbar + Hamburger Menu) -->
+   <header>
+    <div class="logo">
+        <img src="logo.png" alt="Logo" style="height: 50px;">
+    </div>
+
+    <div class="hamburger" onclick="toggleMenu()" style="display:none; cursor:pointer;">
+        <div style="width:25px; height:3px; background:#5D504C; margin:5px;"></div>
+        <div style="width:25px; height:3px; background:#5D504C; margin:5px;"></div>
+        <div style="width:25px; height:3px; background:#5D504C; margin:5px;"></div>
+    </div>
+
+    <nav class="nav-links" id="nav-links">
+        <a href="index.html">HOME</a>
+        <a href="#categories">LES CATÉGORIES</a>
+        <a href="#contact">CONTACTER NOUS</a>
+    </nav>
+</header>
+
+    <main>
+        <!-- 2. قسم الواجهة الترحيبية (Hero Video Background) -->
+        <section class="hero-section">
+            <!-- فيديو صامت يتكرر بشكل لا نهائي كخلفية -->
+            <video autoplay loop muted playsinline class="hero-video-bg">
+                <source src="brand-video.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            
+            <!-- النصوص والأزرار التفاعلية فوق الفيديو -->
+            <div class="hero-content-overlay">
+                <h1>Chiraz Store</h1>
+                <p>Où le confort rencontre l'élégance</p> 
+            </div>
+        </section>
+
+        <!-- 3. قسم المنتجات الأكثر مبيعاً (Best Sellers) -->
+       <section class="best-sellers-section">
+    <div class="container-title">
+        <h2>Best Sellers</h2>
+    </div>
+    <div class="best-sellers-grid" id="best-sellers-list">
+        </div>
+</section>
+
+<section class="categories-section">
+    <div class="container-title">
+        <h2>Découvrir par catégorie</h2>
+    </div>
+   <div class="categories-grid">
+    <div class="cat-card" onclick="filterByCategory('Robes')">
+        <img src="robe-category.jpg" alt="Robes">
+        <span>Robes</span>
+    </div>
+    <div class="cat-card" onclick="filterByCategory('Abayas')">
+        <img src="abaya-category.jpg" alt="Abayas">
+        <span>Abayas</span>
+    </div>
+    <div class="cat-card" onclick="filterByCategory('ensembles')">
+        <img src="ensemble-category.jpg" alt="Ensembles">
+        <span>Ensembles</span>
+    </div>
+</div>
+
+</div>
+<div class="best-sellers-grid" id="category-list" style="margin-top: 40px;"></div>
+        </section>
+
+        <!-- 5. قسم ميزات البراند (Why We Are The Best Choice) -->
+        <section class="why-choose-us-section">
+    <h2 class="section-title">Why Choose Chiraz Store?</h2>
+    
+    <div class="features-container">
+        
+        <div class="feature-card">
+            <h3>Quality</h3>
+            <p>Des tissus sélectionnés...</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>Elegance</h3>
+            <p>Des coupes modernes...</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>Comfort</h3>
+            <p>Une liberté de mouvement...</p>
+        </div>
+        
+    </div>
+ </section>
+    </main>
+
+    <!-- 6. التذييل (Footer + 3 وسائل تواصل اجتماعي + Credit) -->
+    <footer id="contact">
+        <div class="footer-main-content">
+            <h3>Chiraz Store</h3>
+            <p>Rejoignez notre communauté sur les réseaux sociaux pour ne rien rater de nos nouveautés.</p>
+            
+            <!-- أزرار وسائل التواصل الاجتماعي الثلاثة المحددة -->
+            <div class="social-networks-container">
+                <a href="https://instagram.com" target="_blank" class="social-btn">Instagram</a>
+                <a href="https://tiktok.com" target="_blank" class="social-btn">TikTok</a>
+                <a href="https://facebook.com" target="_blank" class="social-btn">Facebook</a>
+            </div>
+        </div>
+        
+        <!-- سطر الحقوق والـ Credit الرسمي باسمكِ -->
+        <div class="footer-copyrights-bar">
+            <p>&copy; 2026 Chiraz Store. Tous droits réservés. Conçu et développé par <strong>Chiraz senni</strong>.</p>
+        </div>
+    </footer>
+<script>
+    const allProducts = JSON.parse(localStorage.getItem('products') || '[]');
+
+    // دالة العرض (متعددة الاستخدامات)
+    function displayProducts(productsToDisplay, containerId) {
+        const grid = document.getElementById(containerId);
+        if (!grid) return;
+
+        if (productsToDisplay.length === 0) {
+            grid.innerHTML = "<p style='text-align:center;'>Aucun produit dans cette catégorie.</p>";
+            return;
+        }
+
+        grid.innerHTML = productsToDisplay.map(p => `
+            <div class="product-card">
+                <div class="product-img-box" onclick="window.location.href='product.html?id=${p.id}'" style="cursor:pointer;">
+                    <img src="${p.image}" alt="${p.nameFr}">
+                </div>
+                <div class="product-details">
+                    <h3 onclick="window.location.href='product.html?id=${p.id}'" style="cursor:pointer;">${p.nameFr}</h3>
+                    <p class="price">${p.price} DA</p>
+                    <button class="btn" onclick="addToCart('${p.id}')">Ajouter</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // 1. عرض الـ Best Sellers فقط عند تحميل الصفحة
+    const bestSellers = allProducts.filter(p => p.isBestSeller === true);
+    displayProducts(bestSellers, 'best-sellers-list'); 
+
+    // 2. دالة الفلترة (تستدعى عند الضغط على أزرار التصنيفات)
+    function filterByCategory(category) {
+        const filtered = allProducts.filter(p => p.category === category);
+        displayProducts(filtered, 'category-list');
+    }
+
+    // دالة السلة
+    function addToCart(id) {
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        let product = allProducts.find(p => p.id == id);
+        let existing = cart.find(item => item.id == id);
+        if (existing) { existing.qty += 1; } 
+        else { product.qty = 1; cart.push(product); }
+        localStorage.setItem('cart', JSON.stringify(cart));
+        alert("Produit ajouté au panier !");
+    }
+    function toggleMenu() {
+    const nav = document.getElementById('nav-links');
+    nav.classList.toggle('active');
+}
+</script>
+</body>
+</html>

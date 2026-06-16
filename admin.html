@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Administration | Chiraz Store</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 950px; margin: auto; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 30px; }
+        h2 { color: #5D504C; border-bottom: 2px solid #E6DCD2; padding-bottom: 10px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .full-width { grid-column: span 2; }
+        .btn { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-save { background: #5D504C; color: white; width: 100%; }
+        .btn-edit { background: #ffc107; color: #333; margin-right: 5px; }
+        .btn-del { background: #dc3545; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        .img-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🛠 Panneau d'administration Chiraz Store</h2>
+
+    <!-- القسم 1: المنتجات -->
+    <div class="card">
+        <h3>➕ Ajouter / Modifier un produit</h3>
+        <form id="product-form" class="form-grid">
+            <input type="hidden" id="edit-index" value="-1">
+            <input type="text" id="name" placeholder="Nom du produit" required>
+            <input type="number" id="price" placeholder="Prix (DA)" required>
+            <input type="text" id="sizes" placeholder="Tailles (ex: S,M,L)">
+            <input type="text" id="colors" placeholder="Couleurs (ex: Noir,Beige)">
+            <textarea id="description" placeholder="Description détaillée" class="full-width" rows="4"></textarea>
+            <label>Image principale:</label>
+            <input type="file" id="main-image" accept="image/*">
+            <label>Images des couleurs (Sélectionnez plusieurs):</label>
+            <input type="file" id="color-images" multiple accept="image/*">
+            <label>Catégorie :</label>
+<select id="product-category">
+    <option value="Robes">Robes</option>
+    <option value="Abayas">abayas</option>
+    <option value="ensembles">ensembles</option>
+</select>
+            <label class="full-width"><input type="checkbox" id="best"> Ajouter aux Best Sellers</label>
+            <button type="submit" class="btn btn-save full-width">Enregistrer le produit</button>
+        </form>
+    </div>
+
+    <!-- القسم 2: قائمة المنتجات -->
+    <div class="card">
+        <h3>📦 Liste des produits</h3>
+        <table>
+            <thead><tr><th>Image</th><th>Nom</th><th>Prix</th><th>Actions</th></tr></thead>
+            <tbody id="product-list"></tbody>
+        </table>
+    </div>
+
+    <!-- القسم 3: الطلبات -->
+    <div class="card">
+        <h3>🚚 Commandes reçues</h3>
+        <table>
+            <thead><tr><th>Client</th><th>Produits</th><th>Total</th><th>Statut</th></tr></thead>
+            <tbody id="order-list"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let products = JSON.parse(localStorage.getItem('products')) || [];
+    let orders = JSON.parse(localStorage.getItem('orders')) || [];
+
+    // دالة تحويل الصور لـ Base64
+    function getBase64(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // حفظ المنتج
+    document.getElementById('product-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const index = document.getElementById('edit-index').value;
+        const mainImgFile = document.getElementById('main-image').files[0];
+        const colorFiles = document.getElementById('color-images').files;
+        
+        const mainImg = mainImgFile ? await getBase64(mainImgFile) : (index != -1 ? products[index].image : '');
+        let colorImgs = [];
+        for(let f of colorFiles) colorImgs.push(await getBase64(f));
+
+        const product = {
+            id: index == -1 ? Date.now() : products[index].id,
+            nameFr: document.getElementById('name').value,
+            price: document.getElementById('price').value,
+            description: document.getElementById('description').value,
+            sizes: document.getElementById('sizes').value.split(','),
+            colors: document.getElementById('colors').value.split(','),
+            image: mainImg,
+          category:  document.getElementById('product-category').value,
+            colorImages: colorImgs.length > 0 ? colorImgs : (index != -1 ? products[index].colorImages : []),
+            isBestSeller: document.getElementById('best').checked
+        };
+
+        if (index == -1) products.push(product); else products[index] = product;
+        localStorage.setItem('products', JSON.stringify(products));
+        location.reload();
+    });
+
+    // عرض القوائم
+    function render() {
+        // عرض المنتجات
+        document.getElementById('product-list').innerHTML = products.map((p, i) => `
+            <tr>
+                <td><img src="${p.image}" class="img-thumb"></td>
+                <td>${p.nameFr}</td>
+                <td>${p.price} DA</td>
+                <td>
+                    <button class="btn btn-edit" onclick="edit(${i})">Modifier</button>
+                    <button class="btn btn-del" onclick="del(${i})">Supprimer</button>
+                </td>
+            </tr>
+        `).join('');
+
+        // عرض الطلبات
+        document.getElementById('order-list').innerHTML = orders.map(o => `
+            <tr>
+                <td>${o.clientName}</td>
+                <td>${o.items.map(i => i.nameFr).join(', ')}</td>
+                <td>${o.totalPrice} DA</td>
+                <td>${o.status || 'En cours'}</td>
+            </tr>
+        `).join('');
+    }
+
+    function edit(i) {
+        document.getElementById('edit-index').value = i;
+        document.getElementById('name').value = products[i].nameFr;
+        document.getElementById('price').value = products[i].price;
+        document.getElementById('description').value = products[i].description;
+        document.getElementById('sizes').value = products[i].sizes.join(',');
+        document.getElementById('colors').value = products[i].colors.join(',');
+        document.getElementById('best').checked = products[i].isBestSeller;
+        window.scrollTo(0, 0);
+    }
+
+    function del(i) { if(confirm('Supprimer ce produit ?')) { products.splice(i, 1); localStorage.setItem('products', JSON.stringify(products)); location.reload(); } }
+    
+    render();
+</script>
+</body>
+</html>

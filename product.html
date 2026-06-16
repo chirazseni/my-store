@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Détails du produit</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; display: flex; justify-content: center; }
+        .product-container { display: flex; gap: 50px; max-width: 900px; }
+        .main-img { width: 400px; height: 500px; object-fit: cover; border-radius: 10px; }
+        .details { max-width: 400px; }
+        .color-gallery { display: flex; gap: 10px; margin: 20px 0; }
+        .color-thumb { width: 60px; height: 60px; cursor: pointer; border: 2px solid #ddd; border-radius: 5px; }
+        .btn-cart { background: #5D504C; color: #fff; padding: 15px 30px; border: none; cursor: pointer; width: 100%; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="product-view" class="product-container">
+    </div>
+
+<script>
+    // 1. استخراج الـ ID من الرابط
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    
+    // 2. جلب المنتجات
+    const products = JSON.parse(localStorage.getItem('products')) || [];
+    const product = products.find(p => p.id == id);
+
+    // 3. عرض البيانات (مع التحقق)
+    const container = document.getElementById('product-view');
+    
+    if (product) {
+        container.innerHTML = `
+            <img src="${product.image}" id="main-img" class="main-img">
+            <div class="details">
+                <h1>${product.nameFr}</h1>
+                <p style="font-size: 20px; color: #5D504C;"><strong>${product.price} DA</strong></p>
+                <p>${product.description || 'Aucune description disponible.'}</p>
+                
+                <p><strong>Couleurs disponibles:</strong></p>
+                <div class="color-gallery">
+                    ${product.colorImages && product.colorImages.length > 0 
+                        ? product.colorImages.map(img => `<img src="${img}" class="color-thumb" onclick="document.getElementById('main-img').src='${img}'">`).join('')
+                        : 'Aucune image supplémentaire'}
+                </div>
+                
+                <label>Quantité: </label>
+                <input type="number" value="1" id="qty" style="width: 50px; padding: 5px;">
+                <br><br>
+                <button class="btn-cart" onclick="addToCart()">Ajouter au panier</button>
+            </div>
+        `;
+    } else {
+        container.innerHTML = '<h1>Produit non trouvé</h1>';
+    }
+
+    function addToCart() {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        // إضافة المنتج للسلة مع الكمية
+        cart.push({ ...product, qty: document.getElementById('qty').value });
+        localStorage.setItem('cart', JSON.stringify(cart));
+        alert('Produit ajouté au panier!');
+    }
+</script>
+</body>
+</html>

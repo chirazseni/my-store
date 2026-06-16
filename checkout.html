@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Finaliser la commande | Chiraz Store</title>
+    <link rel="stylesheet" href="style.css"> <style>
+        .checkout-container { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .summary-box { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #5D504C; }
+        .total-text { font-size: 1.2em; font-weight: bold; color: #5D504C; }
+    </style>
+</head>
+<body>
+
+<div class="checkout-container">
+    <h2>🚚 Finaliser la commande</h2>
+    
+    <div class="summary-box">
+        <p>Total de votre commande : <span id="total-price" class="total-text">0 DA</span></p>
+    </div>
+
+    <form id="checkout-form">
+        <input type="text" id="name" placeholder="Nom complet" required>
+        <input type="tel" id="phone" placeholder="Numéro de téléphone" required>
+        <input type="email" id="email" placeholder="Email">
+        
+        <select id="wilaya" required>
+            <option value="">Sélectionnez votre Wilaya</option>
+            <option value="Alger">16 - Alger</option>
+            <option value="Oran">31 - Oran</option>
+        </select>
+        
+        <input type="text" id="commune" placeholder="Commune" required>
+        <input type="text" id="address" placeholder="Adresse complète" required>
+        
+        <select id="delivery-type" required>
+            <option value="Domicile">Livraison à domicile</option>
+            <option value="Bureau">Livraison au bureau/point relais</option>
+        </select>
+
+        <button type="submit" class="btn" style="margin-top:20px;">Confirmer la commande</button>
+    </form>
+</div>
+
+<script>
+    // 1. حساب السعر الإجمالي عند فتح الصفحة
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    let total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    document.getElementById('total-price').innerText = total.toLocaleString() + " DA";
+
+    // 2. إرسال الطلب للإدارة
+    document.getElementById('checkout-form').onsubmit = (e) => {
+        e.preventDefault();
+        
+        let orders = JSON.parse(localStorage.getItem('orders') || '[]');
+        const newOrder = {
+            id: Date.now(),
+            clientName: document.getElementById('name').value,
+            clientPhone: document.getElementById('phone').value,
+            email: document.getElementById('email').value,
+            wilaya: document.getElementById('wilaya').value,
+            commune: document.getElementById('commune').value,
+            address: document.getElementById('address').value,
+            deliveryType: document.getElementById('delivery-type').value,
+            items: cart,
+            totalPrice: total,
+            status: "En cours"
+        };
+
+        orders.push(newOrder);
+        localStorage.setItem('orders', JSON.stringify(orders));
+        localStorage.removeItem('cart');
+        
+        alert("Merci ! Votre commande est bien enregistrée.");
+        window.location.href = "index.html";
+    };
+</script>
+
+</body>
+</html>
