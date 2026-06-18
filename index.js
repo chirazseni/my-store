@@ -42,7 +42,7 @@ app.post('/products', upload.array('images', 5), async (req, res) => {
     const parsedSizes = sizes ? JSON.parse(sizes) : [];
 
     // إنشاء روابط كاملة للصور المرفوعة
-    const imageUrls = req.files.map(file => `http://localhost:3000/uploads/${file.filename}`);
+ const imageUrls = req.files.map(file => `https://my-store-vdd4.onrender.com/uploads/${file.filename}`);
 
     const product = new Product({
       name,
