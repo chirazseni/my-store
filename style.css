@@ -1,6 +1,8 @@
 /* ==========================================================================
    1. الإعدادات العامة والمتغيرات
-   ========================================================================== */
+ 
+  ========================================================================== */
+
 :root {
     --clr-blanc: #FFFFFF;
     --clr-beige-light: #FBF9F6;
@@ -22,6 +24,10 @@ a { text-decoration: none; color: inherit; transition: all 0.3s ease; }
    ========================================================================== */
 /* تنسيق الـ Header العام */
 /* تنسيق الـ Header العام */
+/* ==========================================================================
+   2. شريط التنقل (Header & Navbar) - الكود الصحيح
+   ========================================================================== */
+
 header {
     display: flex;
     justify-content: space-between;
@@ -29,40 +35,68 @@ header {
     padding: 15px 5%;
 }
 
-/* تنسيق زر الهامبرغر */
 .hamburger {
-    display: none; /* مخفي في الكمبيوتر */
-    flex-direction: column;
+    display: none;
     cursor: pointer;
+    flex-direction: column;
+    gap: 5px;
 }
 
-.hamburger .bar {
+.hamburger div {
     width: 25px;
     height: 3px;
     background-color: #5D504C;
-    margin: 2px 0;
+}
+
+/* تنسيق الروابط العام (يعمل على الكمبيوتر) */
+.nav-links a {
+    padding: 10px 20px;
+    border: 2px solid #5D504C;
+    border-radius: 8px;
+    margin: 0 10px;
+    color: #5D504C;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.nav-links a:hover {
+    background-color: #5D504C;
+    color: white;
 }
 
 /* تنسيق الموبايل */
 @media (max-width: 768px) {
-    .hamburger {
-        display: flex; /* يظهر في الموبايل */
+    .hamburger { 
+        display: flex; 
+        position: absolute;
+        right: 20px;
+        top: 20px; 
     }
-
+    
     .nav-links {
-        display: none; /* القائمة تختفي */
+        display: none; 
         flex-direction: column;
         position: absolute;
         top: 70px;
         left: 0;
         width: 100%;
         background: white;
+        text-align: center;
         padding: 20px 0;
         box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+    
+    .nav-links.active {
+        display: flex !important;
     }
 
-    .nav-links.active {
-        display: flex; /* تظهر عند الضغط */
+    /* تعديل الروابط للموبايل لتصبح عمودية */
+    .nav-links a {
+        margin: 10px auto;
+        width: 80%;
+        display: block;
     }
 }
 
@@ -312,46 +346,4 @@ footer {
     padding-top: 20px;
     font-size: 0.85rem;
     opacity: 0.7;
-}
-/* 1. إخفاء القائمة العادية في الموبايل وإظهار زر الهامبرغر */
-.hamburger {
-    display: none; /* مخفي في الكمبيوتر */
-    cursor: pointer;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.hamburger span {
-    width: 25px;
-    height: 3px;
-    background-color: #5D504C;
-}
-
-/* 2. تنسيق قائمة الموبايل */
-.humburger{
-    display: none;
-}
-@media (max-width: 768px) {
-    .hamburger { display: flex; 
-    position: absolute;
-right: 20px;
-top:20px; 
-}
-    
-    .nav-links {
-        display: none; /* مخفية افتراضياً */
-        flex-direction: column;
-        position: absolute;
-        top: 60px;
-        left: 0;
-        width: 100%;
-        background: white;
-        text-align: center;
-        padding: 20px 0;
-        box-shadow: 0 5px 10px rgba(0,0,0,0.1);
-    }
-    
-    .nav-links.active {
-        display: flex; /* تظهر عند الضغط */
-    }
 }
