@@ -1,26 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const multer = require('multer');
-const path = require('path');
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 const Product = require('./product');
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
-
-// جعل مجلد الصور متاحاً للوصول عبر المتصفح
-app.use('/uploads', express.static('uploads'));
-
-// إعدادات Multer لتخزين الصور المرفوعة
-const storage = multer.diskStorage({
-  destination: 'uploads/',
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // اسم فريد يعتمد على الوقت
-  }
-});
-const upload = multer({ storage });
+app.use(express.json({ limit: '10mb' }));
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB متصلة!'))
@@ -32,29 +20,33 @@ app.get('/products', async (req, res) => {
   res.json(products);
 });
 
-// إضافة منتج جديد مع رفع صور متعددة (حد أقصى 5 صور)
-app.post('/products', upload.array('images', 5), async (req, res) => {
+// جلب منتج واحد بالـ ID
+app.get('/products/:id', async (req, res) => {
   try {
-    const { name, price, description, colors, sizes } = req.body;
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Produit non trouvé' });
+    res.json(product);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
-    // تحويل المصفوفات القادمة كنصوص (JSON) إلى مصفوفات حقيقية
-    const parsedColors = colors ? JSON.parse(colors) : [];
-    const parsedSizes = sizes ? JSON.parse(sizes) : [];
-
-    // إنشاء روابط كاملة للصور المرفوعة
- const imageUrls = req.files.map(file => `https://my-store-vdd4.onrender.com/uploads/${file.filename}`);
-
-    const product = new Product({
-      name,
-      price,
-      description,
-      images: imageUrls,
-      colors: parsedColors,
-      sizes: parsedSizes
-    });
-
+// إضافة منتج جديد (الصور تكون روابط Cloudinary جاهزة من الفرونتاند)
+app.post('/products', async (req, res) => {
+  try {
+    const product = new Product(req.body);
     await product.save();
     res.status(201).json(product);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// تعديل منتج
+app.put('/products/:id', async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(product);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -66,6 +58,7 @@ app.delete('/products/:id', async (req, res) => {
   res.json({ message: 'تم الحذف!' });
 });
 
-app.listen(3000, () => {
-  console.log('Sيرفر شغال على http://localhost:3000');
-}); 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log('السيرفر شغال على المنفذ ' + PORT);
+});
