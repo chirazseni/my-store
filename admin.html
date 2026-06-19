@@ -53,9 +53,16 @@
             <button type="submit" class="btn btn-save full-width">Enregistrer le produit</button>
         </form>
     </div>
-
+<div class="card">
+    <h3>🚚 Commandes reçues</h3>
+    <table>
+        <thead><tr><th>Client</th><th>Téléphone</th><th>Produits</th><th>Total</th><th>Wilaya</th><th>Statut</th></tr></thead>
+        <tbody id="order-list"></tbody>
+    </table>
+</div>
     <div class="card">
         <h3>📦 Liste des produits</h3>
+
         <table>
             <thead><tr><th>Image</th><th>Nom</th><th>Prix</th><th>Actions</th></tr></thead>
             <tbody id="product-list"></tbody>
@@ -181,7 +188,23 @@
         }
     }
 
-    loadProducts();
+   async function loadOrders() {
+    const res = await fetch(`${API_URL}/orders`);
+    const orders = await res.json();
+    document.getElementById('order-list').innerHTML = orders.map(o => `
+        <tr>
+            <td>${o.clientName}</td>
+            <td>${o.clientPhone}</td>
+            <td>${o.items.map(i => i.name).join(', ')}</td>
+            <td>${o.totalPrice} DA</td>
+            <td>${o.wilaya}</td>
+            <td>${o.status}</td>
+        </tr>
+    `).join('');
+}
+
+loadProducts();
+loadOrders();
 </script>
 </body>
 </html>
