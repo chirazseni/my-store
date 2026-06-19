@@ -57,7 +57,22 @@ app.delete('/products/:id', async (req, res) => {
   await Product.findByIdAndDelete(req.params.id);
   res.json({ message: 'تم الحذف!' });
 });
+const Order = require('./order');
 
+app.get('/orders', async (req, res) => {
+  const orders = await Order.find().sort({ createdAt: -1 });
+  res.json(orders);
+});
+
+app.post('/orders', async (req, res) => {
+  try {
+    const order = new Order(req.body);
+    await order.save();
+    res.status(201).json(order);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log('السيرفر شغال على المنفذ ' + PORT);
