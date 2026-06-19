@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administration | Chiraz Store</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333; }
@@ -19,10 +20,38 @@
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
         .img-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
         #upload-status { font-size: 14px; color: #5D504C; margin-top: 5px; }
+
+        /* قفل الدخول بكلمة مرور */
+        #login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
+        #login-screen input { max-width: 300px; margin-bottom: 10px; }
+        #login-screen button { max-width: 300px; }
+        #admin-content { display:none; }
+
+        /* تصميم متجاوب للهاتف */
+        @media (max-width: 700px) {
+            body { padding: 10px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; }
+            tr { margin-bottom: 15px; border: 1px solid #eee; border-radius: 8px; padding: 10px; }
+            td { border: none; padding: 6px 0; }
+            td::before { font-weight: bold; display: block; color: #5D504C; }
+        }
     </style>
 </head>
 <body>
 
+<!-- شاشة تسجيل الدخول -->
+<div id="login-screen">
+    <h2>🔒 Connexion Admin</h2>
+    <input type="password" id="admin-password" placeholder="Mot de passe">
+    <button class="btn btn-save" onclick="checkPassword()">Entrer</button>
+    <p id="login-error" style="color:red;"></p>
+</div>
+
+<!-- محتوى الأدمين -->
+<div id="admin-content">
 <div class="container">
     <h2>🛠 Panneau d'administration Chiraz Store</h2>
 
@@ -53,27 +82,51 @@
             <button type="submit" class="btn btn-save full-width">Enregistrer le produit</button>
         </form>
     </div>
-<div class="card">
-    <h3>🚚 Commandes reçues</h3>
-    <table>
-        <thead><tr><th>Client</th><th>Téléphone</th><th>Produits</th><th>Total</th><th>Wilaya</th><th>Statut</th></tr></thead>
-        <tbody id="order-list"></tbody>
-    </table>
-</div>
+
+    <div class="card">
+        <h3>🚚 Commandes reçues</h3>
+        <table>
+            <thead><tr><th>Client</th><th>Téléphone</th><th>Produits</th><th>Total</th><th>Wilaya</th><th>Statut</th></tr></thead>
+            <tbody id="order-list"></tbody>
+        </table>
+    </div>
+
     <div class="card">
         <h3>📦 Liste des produits</h3>
-
         <table>
             <thead><tr><th>Image</th><th>Nom</th><th>Prix</th><th>Actions</th></tr></thead>
             <tbody id="product-list"></tbody>
         </table>
     </div>
 </div>
+</div>
 
 <script>
     const API_URL = 'https://my-store-vdd4.onrender.com';
     const CLOUDINARY_CLOUD_NAME = 'dlpnfgyh4';
     const CLOUDINARY_PRESET = 'my-store';
+    const ADMIN_PASSWORD = 'Chiraz2026'; // بدليها بالباسورد اللي تحبيه
+
+    function checkPassword() {
+        const entered = document.getElementById('admin-password').value;
+        if (entered === ADMIN_PASSWORD) {
+            sessionStorage.setItem('isAdmin', 'true');
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-content').style.display = 'block';
+            loadProducts();
+            loadOrders();
+        } else {
+            document.getElementById('login-error').innerText = 'Mot de passe incorrect';
+        }
+    }
+
+    // إذا كان مسجل دخول من قبل في نفس الجلسة
+    if (sessionStorage.getItem('isAdmin') === 'true') {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-content').style.display = 'block';
+        loadProducts();
+        loadOrders();
+    }
 
     let products = [];
 
@@ -83,7 +136,6 @@
         render();
     }
 
-    // رفع صورة واحدة إلى Cloudinary وإرجاع الرابط
     async function uploadToCloudinary(file) {
         const formData = new FormData();
         formData.append('file', file);
@@ -157,10 +209,10 @@
     function render() {
         document.getElementById('product-list').innerHTML = products.map((p) => `
             <tr>
-                <td><img src="${p.image}" class="img-thumb"></td>
-                <td>${p.name}</td>
-                <td>${p.price} DA</td>
-                <td>
+                <td data-label="Image"><img src="${p.image}" class="img-thumb"></td>
+                <td data-label="Nom">${p.name}</td>
+                <td data-label="Prix">${p.price} DA</td>
+                <td data-label="Actions">
                     <button class="btn btn-edit" onclick="edit('${p._id}')">Modifier</button>
                     <button class="btn btn-del" onclick="del('${p._id}')">Supprimer</button>
                 </td>
@@ -188,23 +240,35 @@
         }
     }
 
-   async function loadOrders() {
-    const res = await fetch(`${API_URL}/orders`);
-    const orders = await res.json();
-    document.getElementById('order-list').innerHTML = orders.map(o => `
-        <tr>
-            <td>${o.clientName}</td>
-            <td>${o.clientPhone}</td>
-            <td>${o.items.map(i => i.name).join(', ')}</td>
-            <td>${o.totalPrice} DA</td>
-            <td>${o.wilaya}</td>
-            <td>${o.status}</td>
-        </tr>
-    `).join('');
-}
+    async function loadOrders() {
+        const res = await fetch(`${API_URL}/orders`);
+        const orders = await res.json();
+        document.getElementById('order-list').innerHTML = orders.map(o => `
+            <tr>
+                <td data-label="Client">${o.clientName}</td>
+                <td data-label="Téléphone">${o.clientPhone}</td>
+                <td data-label="Produits">${o.items.map(i => i.name).join(', ')}</td>
+                <td data-label="Total">${o.totalPrice} DA</td>
+                <td data-label="Wilaya">${o.wilaya}</td>
+                <td data-label="Statut">
+                    <select onchange="updateStatus('${o._id}', this.value)">
+                        <option value="En cours" ${o.status === 'En cours' ? 'selected' : ''}>En cours</option>
+                        <option value="Complet" ${o.status === 'Complet' ? 'selected' : ''}>Complet</option>
+                        <option value="Annulé" ${o.status === 'Annulé' ? 'selected' : ''}>Annulé</option>
+                    </select>
+                </td>
+            </tr>
+        `).join('');
+    }
 
-loadProducts();
-loadOrders();
+    async function updateStatus(id, newStatus) {
+        await fetch(`${API_URL}/orders/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        loadOrders();
+    }
 </script>
 </body>
 </html>
