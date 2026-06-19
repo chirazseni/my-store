@@ -25,22 +25,37 @@
     const container = document.getElementById('cart-items');
     const totalDiv = document.getElementById('total-price');
 
-    if (cart.length === 0) {
-        container.innerHTML = "<p>Votre panier est vide.</p>";
-    } else {
+    function render() {
+        if (cart.length === 0) {
+            container.innerHTML = "<p>Votre panier est vide.</p>";
+            totalDiv.innerText = "";
+            return;
+        }
+
         container.innerHTML = cart.map((item, index) => `
             <div class="cart-item">
                 <div>
-                    <strong>${item.nameFr}</strong><br>
+                    <strong>${item.name}</strong><br>
                     <small>Quantité: ${item.qty}</small>
                 </div>
-                <div>${(item.price * item.qty).toLocaleString()} DA</div>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <span>${(item.price * item.qty).toLocaleString()} DA</span>
+                    <button onclick="removeItem(${index})" style="background:#dc3545; color:white; border:none; border-radius:5px; padding:8px 12px; cursor:pointer;">Supprimer</button>
+                </div>
             </div>
         `).join('');
 
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         totalDiv.innerText = "Total : " + total.toLocaleString() + " DA";
     }
+
+    function removeItem(index) {
+        cart.splice(index, 1);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        render();
+    }
+
+    render();
 </script>
 
 </body>
