@@ -73,6 +73,14 @@ app.post('/orders', async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 });
+app.put('/orders/:id', async (req, res) => {
+  try {
+    const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(order);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log('السيرفر شغال على المنفذ ' + PORT);
