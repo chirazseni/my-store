@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administration | Chiraz Store</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333; }
+        .container { max-width: 950px; margin: auto; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 30px; }
+        h2 { color: #5D504C; border-bottom: 2px solid #E6DCD2; padding-bottom: 10px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .full-width { grid-column: span 2; }
+        .btn { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-save { background: #5D504C; color: white; width: 100%; }
+        .btn-edit { background: #ffc107; color: #333; margin-right: 5px; }
+        .btn-del { background: #dc3545; color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        .img-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+        #upload-status { font-size: 14px; color: #5D504C; margin-top: 5px; }
+
+        /* قفل الدخول بكلمة مرور */
+        #login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; }
+        #login-screen input { max-width: 300px; margin-bottom: 10px; }
+        #login-screen button { max-width: 300px; }
+        #admin-content { display:none; }
+
+        /* تصميم متجاوب للهاتف */
+        @media (max-width: 700px) {
+            body { padding: 10px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; }
+            tr { margin-bottom: 15px; border: 1px solid #eee; border-radius: 8px; padding: 10px; }
+            td { border: none; padding: 6px 0; }
+            td::before { font-weight: bold; display: block; color: #5D504C; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- شاشة تسجيل الدخول -->
+<div id="login-screen">
+    <h2>🔒 Connexion Admin</h2>
+    <input type="password" id="admin-password" placeholder="Mot de passe">
+    <button class="btn btn-save" onclick="checkPassword()">Entrer</button>
+    <p id="login-error" style="color:red;"></p>
+</div>
+
+<!-- محتوى الأدمين -->
+<div id="admin-content">
+<div class="container">
+    <h2>🛠 Panneau d'administration Chiraz Store</h2>
+
+    <div class="card">
+        <h3>➕ Ajouter / Modifier un produit</h3>
+        <form id="product-form" class="form-grid">
+            <input type="hidden" id="edit-id" value="">
+            <input type="text" id="name" placeholder="Nom du produit" required>
+            <input type="number" id="price" placeholder="Prix (DA)" required>
+            <input type="text" id="sizes" placeholder="Tailles (ex: S,M,L)">
+            <input type="text" id="colors" placeholder="Couleurs (ex: Noir,Beige)">
+            <textarea id="description" placeholder="Description détaillée" class="full-width" rows="4"></textarea>
+
+            <label>Image principale:</label>
+            <input type="file" id="main-image" accept="image/*">
+
+            <label>Images des couleurs (Sélectionnez plusieurs):</label>
+            <input type="file" id="color-images" multiple accept="image/*">
+
+            <label>Catégorie :</label>
+            <select id="product-category">
+                <option value="Robes">Robes</option>
+                <option value="Abayas">Abayas</option>
+                <option value="ensembles">ensembles</option>
+            </select>
+            <label class="full-width"><input type="checkbox" id="best"> Ajouter aux Best Sellers</label>
+            <div id="upload-status" class="full-width"></div>
+            <button type="submit" class="btn btn-save full-width">Enregistrer le produit</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>🚚 Commandes reçues</h3>
+        <table>
+            <thead><tr><th>Client</th><th>Téléphone</th><th>Produits</th><th>Total</th><th>Wilaya</th><th>Statut</th></tr></thead>
+            <tbody id="order-list"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>📦 Liste des produits</h3>
+        <table>
+            <thead><tr><th>Image</th><th>Nom</th><th>Prix</th><th>Actions</th></tr></thead>
+            <tbody id="product-list"></tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+<script>
+    const API_URL = 'https://my-store-vdd4.onrender.com';
+    const CLOUDINARY_CLOUD_NAME = 'dlpnfgyh4';
+    const CLOUDINARY_PRESET = 'my-store';
+    const ADMIN_PASSWORD = 'Chiraz2026'; // بدليها بالباسورد اللي تحبيه
+
+    function checkPassword() {
+        const entered = document.getElementById('admin-password').value;
+        if (entered === ADMIN_PASSWORD) {
+            sessionStorage.setItem('isAdmin', 'true');
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-content').style.display = 'block';
+            loadProducts();
+            loadOrders();
+        } else {
+            document.getElementById('login-error').innerText = 'Mot de passe incorrect';
+        }
+    }
+
+    // إذا كان مسجل دخول من قبل في نفس الجلسة
+    if (sessionStorage.getItem('isAdmin') === 'true') {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-content').style.display = 'block';
+        loadProducts();
+        loadOrders();
+    }
+
+    let products = [];
+
+    async function loadProducts() {
+        const res = await fetch(`${API_URL}/products`);
+        products = await res.json();
+        render();
+    }
+
+    async function uploadToCloudinary(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_PRESET);
+
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        return data.secure_url;
+    }
+
+    document.getElementById('product-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const status = document.getElementById('upload-status');
+        const editId = document.getElementById('edit-id').value;
+        const mainImgFile = document.getElementById('main-image').files[0];
+        const colorFiles = document.getElementById('color-images').files;
+
+        status.innerText = 'جاري رفع الصور...';
+
+        let mainImg = editId ? products.find(p => p._id === editId).image : '';
+        if (mainImgFile) {
+            mainImg = await uploadToCloudinary(mainImgFile);
+        }
+
+        let colorImgs = editId ? products.find(p => p._id === editId).colorImages : [];
+        if (colorFiles.length > 0) {
+            colorImgs = [];
+            for (let f of colorFiles) {
+                const url = await uploadToCloudinary(f);
+                colorImgs.push(url);
+            }
+        }
+
+        const product = {
+            name: document.getElementById('name').value,
+            price: document.getElementById('price').value,
+            description: document.getElementById('description').value,
+            sizes: document.getElementById('sizes').value.split(','),
+            colors: document.getElementById('colors').value.split(','),
+            image: mainImg,
+            category: document.getElementById('product-category').value,
+            colorImages: colorImgs,
+            isBestSeller: document.getElementById('best').checked
+        };
+
+        status.innerText = 'جاري الحفظ...';
+
+        if (editId) {
+            await fetch(`${API_URL}/products/${editId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(product)
+            });
+        } else {
+            await fetch(`${API_URL}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(product)
+            });
+        }
+
+        status.innerText = 'تم الحفظ بنجاح!';
+        e.target.reset();
+        document.getElementById('edit-id').value = '';
+        loadProducts();
+    });
+
+    function render() {
+        document.getElementById('product-list').innerHTML = products.map((p) => `
+            <tr>
+                <td data-label="Image"><img src="${p.image}" class="img-thumb"></td>
+                <td data-label="Nom">${p.name}</td>
+                <td data-label="Prix">${p.price} DA</td>
+                <td data-label="Actions">
+                    <button class="btn btn-edit" onclick="edit('${p._id}')">Modifier</button>
+                    <button class="btn btn-del" onclick="del('${p._id}')">Supprimer</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function edit(id) {
+        const p = products.find(x => x._id === id);
+        document.getElementById('edit-id').value = id;
+        document.getElementById('name').value = p.name;
+        document.getElementById('price').value = p.price;
+        document.getElementById('description').value = p.description;
+        document.getElementById('sizes').value = (p.sizes || []).join(',');
+        document.getElementById('colors').value = (p.colors || []).join(',');
+        document.getElementById('best').checked = p.isBestSeller;
+        document.getElementById('product-category').value = p.category;
+        window.scrollTo(0, 0);
+    }
+
+    async function del(id) {
+        if (confirm('Supprimer ce produit ?')) {
+            await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+            loadProducts();
+        }
+    }
+
+    async function loadOrders() {
+        const res = await fetch(`${API_URL}/orders`);
+        const orders = await res.json();
+        document.getElementById('order-list').innerHTML = orders.map(o => `
+            <tr>
+                <td data-label="Client">${o.clientName}</td>
+                <td data-label="Téléphone">${o.clientPhone}</td>
+                <td data-label="Produits">${o.items.map(i => i.name).join(', ')}</td>
+                <td data-label="Total">${o.totalPrice} DA</td>
+                <td data-label="Wilaya">${o.wilaya}</td>
+                <td data-label="Statut">
+                    <select onchange="updateStatus('${o._id}', this.value)">
+                        <option value="En cours" ${o.status === 'En cours' ? 'selected' : ''}>En cours</option>
+                        <option value="Complet" ${o.status === 'Complet' ? 'selected' : ''}>Complet</option>
+                        <option value="Annulé" ${o.status === 'Annulé' ? 'selected' : ''}>Annulé</option>
+                    </select>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function updateStatus(id, newStatus) {
+        await fetch(`${API_URL}/orders/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        loadOrders();
+    }
+</script>
+</body>
+</html>

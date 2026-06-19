@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Panier | Chiraz Store</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .cart-container { max-width: 800px; margin: auto; padding: 20px; background: white; border-radius: 10px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
+        .btn-checkout-link { display: block; text-align: center; background: #5D504C; color: white; padding: 15px; text-decoration: none; border-radius: 8px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="cart-container">
+    <h2>🛒 Mon Panier</h2>
+    <div id="cart-items"></div>
+    <div id="total-price" style="font-size: 1.5em; font-weight: bold; margin-top: 20px; text-align: right;"></div>
+    
+    <a href="checkout.html" class="btn-checkout-link">Passer la commande</a>
+</div>
+
+<script>
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const container = document.getElementById('cart-items');
+    const totalDiv = document.getElementById('total-price');
+
+    function render() {
+        if (cart.length === 0) {
+            container.innerHTML = "<p>Votre panier est vide.</p>";
+            totalDiv.innerText = "";
+            return;
+        }
+
+        container.innerHTML = cart.map((item, index) => `
+            <div class="cart-item">
+                <div>
+                    <strong>${item.name}</strong><br>
+                    <small>Quantité: ${item.qty}</small>
+                </div>
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <span>${(item.price * item.qty).toLocaleString()} DA</span>
+                    <button onclick="removeItem(${index})" style="background:#dc3545; color:white; border:none; border-radius:5px; padding:8px 12px; cursor:pointer;">Supprimer</button>
+                </div>
+            </div>
+        `).join('');
+
+        const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        totalDiv.innerText = "Total : " + total.toLocaleString() + " DA";
+    }
+
+    function removeItem(index) {
+        cart.splice(index, 1);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        render();
+    }
+
+    render();
+</script>
+
+</body>
+</html>
