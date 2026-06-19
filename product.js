@@ -4,9 +4,12 @@ const productSchema = new mongoose.Schema({
   name: String,
   price: Number,
   description: String,
-  images: [String], // تحويل إلى مصفوفة لدعم روابط صور متعددة
-  colors: [String], // إضافة مصفوفة للألوان
-  sizes: [String]   // إضافة مصفوفة للمقاسات
+  image: String,
+  colorImages: [String],
+  colors: [String],
+  sizes: [String],
+  category: String,
+  isBestSeller: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('Product', productSchema);
