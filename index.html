@@ -129,10 +129,19 @@
             <p>&copy; 2026 Chiraz Store. Tous droits réservés. Conçu et développé par <strong>Chiraz senni</strong>.</p>
         </div>
     </footer>
-<script>
-    const allProducts = JSON.parse(localStorage.getItem('products') || '[]');
 
-    // دالة العرض (متعددة الاستخدامات)
+<script>
+    const API_URL = 'https://my-store-vdd4.onrender.com';
+    let allProducts = [];
+
+    async function loadProducts() {
+        const res = await fetch(`${API_URL}/products`);
+        allProducts = await res.json();
+
+        const bestSellers = allProducts.filter(p => p.isBestSeller === true);
+        displayProducts(bestSellers, 'best-sellers-list');
+    }
+
     function displayProducts(productsToDisplay, containerId) {
         const grid = document.getElementById(containerId);
         if (!grid) return;
@@ -144,42 +153,39 @@
 
         grid.innerHTML = productsToDisplay.map(p => `
             <div class="product-card">
-                <div class="product-img-box" onclick="window.location.href='product.html?id=${p.id}'" style="cursor:pointer;">
-                    <img src="${p.image}" alt="${p.nameFr}">
+                <div class="product-img-box" onclick="window.location.href='product.html?id=${p._id}'" style="cursor:pointer;">
+                    <img src="${p.image}" alt="${p.name}">
                 </div>
                 <div class="product-details">
-                    <h3 onclick="window.location.href='product.html?id=${p.id}'" style="cursor:pointer;">${p.nameFr}</h3>
+                    <h3 onclick="window.location.href='product.html?id=${p._id}'" style="cursor:pointer;">${p.name}</h3>
                     <p class="price">${p.price} DA</p>
-                    <button class="btn" onclick="addToCart('${p.id}')">Ajouter</button>
+                    <button class="btn" onclick="addToCart('${p._id}')">Ajouter</button>
                 </div>
             </div>
         `).join('');
     }
 
-    // 1. عرض الـ Best Sellers فقط عند تحميل الصفحة
-    const bestSellers = allProducts.filter(p => p.isBestSeller === true);
-    displayProducts(bestSellers, 'best-sellers-list'); 
-
-    // 2. دالة الفلترة (تستدعى عند الضغط على أزرار التصنيفات)
     function filterByCategory(category) {
         const filtered = allProducts.filter(p => p.category === category);
         displayProducts(filtered, 'category-list');
     }
 
-    // دالة السلة
     function addToCart(id) {
         let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-        let product = allProducts.find(p => p.id == id);
-        let existing = cart.find(item => item.id == id);
-        if (existing) { existing.qty += 1; } 
+        let product = allProducts.find(p => p._id == id);
+        let existing = cart.find(item => item._id == id);
+        if (existing) { existing.qty += 1; }
         else { product.qty = 1; cart.push(product); }
         localStorage.setItem('cart', JSON.stringify(cart));
         alert("Produit ajouté au panier !");
     }
+
     function toggleMenu() {
-    const nav = document.getElementById('nav-links');
-    nav.classList.toggle('active');
-}
+        const nav = document.getElementById('nav-links');
+        nav.classList.toggle('active');
+    }
+
+    loadProducts();
 </script>
 </body>
 </html>
