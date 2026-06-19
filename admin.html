@@ -9,7 +9,7 @@
         .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 30px; }
         h2 { color: #5D504C; border-bottom: 2px solid #E6DCD2; padding-bottom: 10px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
         .full-width { grid-column: span 2; }
         .btn { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-save { background: #5D504C; color: white; width: 100%; }
@@ -18,6 +18,7 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
         .img-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; }
+        #upload-status { font-size: 14px; color: #5D504C; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -25,32 +26,34 @@
 <div class="container">
     <h2>🛠 Panneau d'administration Chiraz Store</h2>
 
-    <!-- القسم 1: المنتجات -->
     <div class="card">
         <h3>➕ Ajouter / Modifier un produit</h3>
         <form id="product-form" class="form-grid">
-            <input type="hidden" id="edit-index" value="-1">
+            <input type="hidden" id="edit-id" value="">
             <input type="text" id="name" placeholder="Nom du produit" required>
             <input type="number" id="price" placeholder="Prix (DA)" required>
             <input type="text" id="sizes" placeholder="Tailles (ex: S,M,L)">
             <input type="text" id="colors" placeholder="Couleurs (ex: Noir,Beige)">
             <textarea id="description" placeholder="Description détaillée" class="full-width" rows="4"></textarea>
+
             <label>Image principale:</label>
             <input type="file" id="main-image" accept="image/*">
+
             <label>Images des couleurs (Sélectionnez plusieurs):</label>
             <input type="file" id="color-images" multiple accept="image/*">
+
             <label>Catégorie :</label>
-<select id="product-category">
-    <option value="Robes">Robes</option>
-    <option value="Abayas">abayas</option>
-    <option value="ensembles">ensembles</option>
-</select>
+            <select id="product-category">
+                <option value="Robes">Robes</option>
+                <option value="Abayas">Abayas</option>
+                <option value="ensembles">ensembles</option>
+            </select>
             <label class="full-width"><input type="checkbox" id="best"> Ajouter aux Best Sellers</label>
+            <div id="upload-status" class="full-width"></div>
             <button type="submit" class="btn btn-save full-width">Enregistrer le produit</button>
         </form>
     </div>
 
-    <!-- القسم 2: قائمة المنتجات -->
     <div class="card">
         <h3>📦 Liste des produits</h3>
         <table>
@@ -58,99 +61,127 @@
             <tbody id="product-list"></tbody>
         </table>
     </div>
-
-    <!-- القسم 3: الطلبات -->
-    <div class="card">
-        <h3>🚚 Commandes reçues</h3>
-        <table>
-            <thead><tr><th>Client</th><th>Produits</th><th>Total</th><th>Statut</th></tr></thead>
-            <tbody id="order-list"></tbody>
-        </table>
-    </div>
 </div>
 
 <script>
-    let products = JSON.parse(localStorage.getItem('products')) || [];
-    let orders = JSON.parse(localStorage.getItem('orders')) || [];
+    const API_URL = 'https://my-store-vdd4.onrender.com';
+    const CLOUDINARY_CLOUD_NAME = 'dlpnfgyh4';
+    const CLOUDINARY_PRESET = 'my-store';
 
-    // دالة تحويل الصور لـ Base64
-    function getBase64(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.readAsDataURL(file);
-        });
+    let products = [];
+
+    async function loadProducts() {
+        const res = await fetch(`${API_URL}/products`);
+        products = await res.json();
+        render();
     }
 
-    // حفظ المنتج
+    // رفع صورة واحدة إلى Cloudinary وإرجاع الرابط
+    async function uploadToCloudinary(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_PRESET);
+
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        return data.secure_url;
+    }
+
     document.getElementById('product-form').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const index = document.getElementById('edit-index').value;
+        const status = document.getElementById('upload-status');
+        const editId = document.getElementById('edit-id').value;
         const mainImgFile = document.getElementById('main-image').files[0];
         const colorFiles = document.getElementById('color-images').files;
-        
-        const mainImg = mainImgFile ? await getBase64(mainImgFile) : (index != -1 ? products[index].image : '');
-        let colorImgs = [];
-        for(let f of colorFiles) colorImgs.push(await getBase64(f));
+
+        status.innerText = 'جاري رفع الصور...';
+
+        let mainImg = editId ? products.find(p => p._id === editId).image : '';
+        if (mainImgFile) {
+            mainImg = await uploadToCloudinary(mainImgFile);
+        }
+
+        let colorImgs = editId ? products.find(p => p._id === editId).colorImages : [];
+        if (colorFiles.length > 0) {
+            colorImgs = [];
+            for (let f of colorFiles) {
+                const url = await uploadToCloudinary(f);
+                colorImgs.push(url);
+            }
+        }
 
         const product = {
-            id: index == -1 ? Date.now() : products[index].id,
-            nameFr: document.getElementById('name').value,
+            name: document.getElementById('name').value,
             price: document.getElementById('price').value,
             description: document.getElementById('description').value,
             sizes: document.getElementById('sizes').value.split(','),
             colors: document.getElementById('colors').value.split(','),
             image: mainImg,
-          category:  document.getElementById('product-category').value,
-            colorImages: colorImgs.length > 0 ? colorImgs : (index != -1 ? products[index].colorImages : []),
+            category: document.getElementById('product-category').value,
+            colorImages: colorImgs,
             isBestSeller: document.getElementById('best').checked
         };
 
-        if (index == -1) products.push(product); else products[index] = product;
-        localStorage.setItem('products', JSON.stringify(products));
-        location.reload();
+        status.innerText = 'جاري الحفظ...';
+
+        if (editId) {
+            await fetch(`${API_URL}/products/${editId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(product)
+            });
+        } else {
+            await fetch(`${API_URL}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(product)
+            });
+        }
+
+        status.innerText = 'تم الحفظ بنجاح!';
+        e.target.reset();
+        document.getElementById('edit-id').value = '';
+        loadProducts();
     });
 
-    // عرض القوائم
     function render() {
-        // عرض المنتجات
-        document.getElementById('product-list').innerHTML = products.map((p, i) => `
+        document.getElementById('product-list').innerHTML = products.map((p) => `
             <tr>
                 <td><img src="${p.image}" class="img-thumb"></td>
-                <td>${p.nameFr}</td>
+                <td>${p.name}</td>
                 <td>${p.price} DA</td>
                 <td>
-                    <button class="btn btn-edit" onclick="edit(${i})">Modifier</button>
-                    <button class="btn btn-del" onclick="del(${i})">Supprimer</button>
+                    <button class="btn btn-edit" onclick="edit('${p._id}')">Modifier</button>
+                    <button class="btn btn-del" onclick="del('${p._id}')">Supprimer</button>
                 </td>
             </tr>
         `).join('');
-
-        // عرض الطلبات
-        document.getElementById('order-list').innerHTML = orders.map(o => `
-            <tr>
-                <td>${o.clientName}</td>
-                <td>${o.items.map(i => i.nameFr).join(', ')}</td>
-                <td>${o.totalPrice} DA</td>
-                <td>${o.status || 'En cours'}</td>
-            </tr>
-        `).join('');
     }
 
-    function edit(i) {
-        document.getElementById('edit-index').value = i;
-        document.getElementById('name').value = products[i].nameFr;
-        document.getElementById('price').value = products[i].price;
-        document.getElementById('description').value = products[i].description;
-        document.getElementById('sizes').value = products[i].sizes.join(',');
-        document.getElementById('colors').value = products[i].colors.join(',');
-        document.getElementById('best').checked = products[i].isBestSeller;
+    function edit(id) {
+        const p = products.find(x => x._id === id);
+        document.getElementById('edit-id').value = id;
+        document.getElementById('name').value = p.name;
+        document.getElementById('price').value = p.price;
+        document.getElementById('description').value = p.description;
+        document.getElementById('sizes').value = (p.sizes || []).join(',');
+        document.getElementById('colors').value = (p.colors || []).join(',');
+        document.getElementById('best').checked = p.isBestSeller;
+        document.getElementById('product-category').value = p.category;
         window.scrollTo(0, 0);
     }
 
-    function del(i) { if(confirm('Supprimer ce produit ?')) { products.splice(i, 1); localStorage.setItem('products', JSON.stringify(products)); location.reload(); } }
-    
-    render();
+    async function del(id) {
+        if (confirm('Supprimer ce produit ?')) {
+            await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+            loadProducts();
+        }
+    }
+
+    loadProducts();
 </script>
 </body>
 </html>
